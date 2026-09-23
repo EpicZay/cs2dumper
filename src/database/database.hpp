@@ -70,7 +70,8 @@ struct DumpDatabase {
     std::map<std::string, Offset> offsets;
     std::map<std::string, Button> buttons;
     std::vector<Issue> issues;
-    std::string steam_build_id, game_build;
+    std::string steam_build_id;
+    std::optional<std::uint32_t> game_build;
     bool insert_class(Class value);
     bool insert_enum(Enum value);
     std::optional<Field> inherited_field(const std::string &scope, const std::string &class_name,

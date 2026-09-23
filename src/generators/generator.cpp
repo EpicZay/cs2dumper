@@ -15,6 +15,13 @@ std::string module_stem(std::string name) {
     std::replace(name.begin(), name.end(), '.', '_');
     return name;
 }
+std::string schema_name(std::string_view name) {
+    std::string result;
+    result.reserve(name.size());
+    for (unsigned char c : name)
+        result.push_back(std::isalnum(c) ? static_cast<char>(c) : '_');
+    return result;
+}
 std::string unique(std::string_view raw, std::string_view language, std::set<std::string> &used) {
     auto base = identifier(raw, language);
     auto name = base;
@@ -36,8 +43,9 @@ json module_json(const DumpDatabase &db, const ModuleRecord &module) {
     for (const auto &[key, klass] : db.classes) {
         (void)key;
         if (klass.scope == module.name)
-            ++class_names[klass.name];
+            ++class_names[schema_name(klass.name)];
     }
+    std::set<std::string> used_class_names;
     for (const auto &[key, klass] : db.classes) {
         (void)key;
         if (klass.scope != module.name)
@@ -65,15 +73,20 @@ json module_json(const DumpDatabase &db, const ModuleRecord &module) {
                                           {"pointer", field.pointer},
                                           {"networked", field.networked},
                                           {"metadata", metadata_json(field.metadata)}};
-        const auto output_name = class_names[klass.name] > 1 ? klass.name + "@" + klass.type_scope : klass.name;
+        const auto normalized = schema_name(klass.name);
+        const auto candidate = class_names[normalized] > 1 ? normalized + "@" + klass.type_scope : normalized;
+        auto output_name = candidate;
+        for (std::size_t suffix = 2; !used_class_names.insert(output_name).second; ++suffix)
+            output_name = candidate + "#" + std::to_string(suffix);
         out["classes"][output_name] = std::move(item);
     }
     std::map<std::string, std::size_t> enum_names;
     for (const auto &[key, e] : db.enums) {
         (void)key;
         if (e.scope == module.name)
-            ++enum_names[e.name];
+            ++enum_names[schema_name(e.name)];
     }
+    std::set<std::string> used_enum_names;
     for (const auto &[key, e] : db.enums) {
         (void)key;
         if (e.scope != module.name)
@@ -81,7 +94,11 @@ json module_json(const DumpDatabase &db, const ModuleRecord &module) {
         json values = json::object();
         for (const auto &v : e.values)
             values[v.name] = v.value;
-        const auto output_name = enum_names[e.name] > 1 ? e.name + "@" + e.type_scope : e.name;
+        const auto normalized = schema_name(e.name);
+        const auto candidate = enum_names[normalized] > 1 ? normalized + "@" + e.type_scope : normalized;
+        auto output_name = candidate;
+        for (std::size_t suffix = 2; !used_enum_names.insert(output_name).second; ++suffix)
+            output_name = candidate + "#" + std::to_string(suffix);
         out["enums"][output_name] = {
             {"size", e.size}, {"alignment", e.alignment}, {"type_scope", e.type_scope}, {"values", values}};
     }
@@ -106,9 +123,7 @@ json offsets_json(const DumpDatabase &db) {
         (void)key;
         out[value.module][value.name] = {{"status", value.status},
                                          {"kind", value.kind},
-                                         {"relative_offset", value.status == "success" &&
-                                                                     value.kind != "schema_pointer" &&
-                                                                     value.kind != "button_list"
+                                         {"relative_offset", value.status == "success" && value.kind != "button_list"
                                                                  ? json(value.relative)
                                                                  : json(nullptr)},
                                          {"method", value.method},
@@ -235,7 +250,7 @@ std::string render_values(const DumpDatabase &db, std::string_view category, std
     if (category == "offsets")
         for (const auto &[key, i] : db.offsets) {
             (void)key;
-            if (i.status == "success" && i.kind != "schema_pointer" && i.kind != "button_list")
+            if (i.status == "success" && i.kind != "button_list")
                 grouped[module_stem(i.module)].push_back({i.name, i.relative});
         }
     if (category == "buttons")
@@ -382,7 +397,7 @@ bool generate(const DumpDatabase &db, const std::filesystem::path &directory, co
                  {"platform", "Windows"},
                  {"architecture", "x86_64"},
                  {"steam_build_id", db.steam_build_id.empty() ? json(nullptr) : json(db.steam_build_id)},
-                 {"game_build", db.game_build.empty() ? json(nullptr) : json(db.game_build)},
+                 {"game_build", db.game_build ? json(*db.game_build) : json(nullptr)},
                  {"modules", json::object()},
                  {"statistics", json::object()},
                  {"generator_languages", json::array()},

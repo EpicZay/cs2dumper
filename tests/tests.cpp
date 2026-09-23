@@ -2,6 +2,7 @@
 #include "core/pe.hpp"
 #include "database/database.hpp"
 #include "generators/generator.hpp"
+#include "source2/collect.hpp"
 #include <chrono>
 #include <cstring>
 #include <filesystem>
@@ -170,6 +171,58 @@ void identifier_sanitization() {
     require(identifier("type", "zig") == "type_" && identifier("i32", "zig") == "i32_", "Zig primitive not sanitized");
     require(identifier("namespace", "csharp") == "namespace_", "C# keyword not sanitized");
 }
+void signature_kinds_and_rvas() {
+    std::vector<std::uint8_t> bytes(0x3000);
+    bytes[0] = 'M';
+    bytes[1] = 'Z';
+    put<std::uint32_t>(bytes, 0x3c, 0x80);
+    put<std::uint32_t>(bytes, 0x80, 0x4550);
+    put<std::uint16_t>(bytes, 0x84, 0x8664);
+    put<std::uint16_t>(bytes, 0x86, 1);
+    put<std::uint16_t>(bytes, 0x94, 0xF0);
+    put<std::uint16_t>(bytes, 0x98, 0x20B);
+    put<std::uint32_t>(bytes, 0x98 + 56, 0x3000);
+    put<std::uint32_t>(bytes, 0x98 + 60, 0x400);
+    const std::size_t section = 0x80 + 24 + 0xF0;
+    std::memcpy(bytes.data() + section, ".text", 5);
+    put<std::uint32_t>(bytes, section + 8, 0x200);
+    put<std::uint32_t>(bytes, section + 12, 0x1000);
+    put<std::uint32_t>(bytes, section + 16, 0x200);
+    put<std::uint32_t>(bytes, section + 20, 0x400);
+    const std::uint8_t base_code[]{0x48, 0x8D, 0x05};
+    std::memcpy(bytes.data() + 0x1000, base_code, sizeof(base_code));
+    put<std::int32_t>(bytes, 0x1003, 0x1800 - 0x1007);
+    const std::uint8_t member_code[]{0xFF, 0x81, 0x20, 0, 0, 0, 0x48, 0x85, 0xD2};
+    std::memcpy(bytes.data() + 0x1020, member_code, sizeof(member_code));
+    const std::uint8_t derived_code[]{0xF2, 0x42, 0x0F, 0x10, 0x84, 0x28, 0x40, 0, 0, 0};
+    std::memcpy(bytes.data() + 0x1040, derived_code, sizeof(derived_code));
+    const std::uint8_t schema_code[]{0x4C, 0x8D, 0x35};
+    std::memcpy(bytes.data() + 0x1060, schema_code, sizeof(schema_code));
+    put<std::int32_t>(bytes, 0x1063, 0x1900 - 0x1067);
+    std::string error;
+    auto pe = PeImage::from_mapped(bytes, error);
+    require(pe.has_value(), "signature fixture PE invalid");
+    ModuleImages images;
+    images.emplace("client.dll", ModuleImage{{"client.dll", {}, 0x100000, 0x3000}, std::move(*pe)});
+    const auto config = nlohmann::json::parse(R"([
+      {"module":"client.dll","name":"dwBase","pattern":"48 8D 05 ?? ?? ?? ??","resolver":{"type":"rip","displacement_offset":3,"instruction_length":7}},
+      {"module":"client.dll","name":"dwMember","kind":"member_offset","pattern":"FF 81 ?? ?? ?? ?? 48 85 D2","resolver":{"type":"immediate","offset":2,"width":4}},
+      {"module":"client.dll","name":"dwDerived","kind":"relative_to_offset","base":"dwBase","pattern":"F2 42 0F 10 84 28 ?? ?? ?? ??","resolver":{"type":"immediate","offset":6,"width":4}},
+      {"module":"client.dll","name":"SchemaSystem","kind":"schema_pointer","pattern":"4C 8D 35 ?? ?? ?? ??","resolver":{"type":"rip","displacement_offset":3,"instruction_length":7}}
+    ])");
+    struct EmptyMemory final : MemoryReader {
+        bool read(std::uint64_t, std::span<std::uint8_t>) const override {
+            return false;
+        }
+    } memory;
+    DumpDatabase db;
+    const auto found = collect_signatures(images, &memory, config, db, {});
+    require(db.offsets.at("client.dll::dwBase").relative == 0x1800, "RIP signature RVA incorrect");
+    require(db.offsets.at("client.dll::dwMember").relative == 0x20, "member displacement incorrect");
+    require(db.offsets.at("client.dll::dwDerived").relative == 0x1840, "derived RVA incorrect");
+    require(db.offsets.at("client.dll::SchemaSystem").relative == 0x1900 && found.schema_address == 0x101900,
+            "schema pointer RVA incorrect");
+}
 void json_serialization_and_generator_formatting() {
     DumpDatabase db;
     db.modules.emplace("client.dll", ModuleRecord{"client.dll", "test", "file_only", 0, 4096, 123, {}});
@@ -179,6 +232,10 @@ void json_serialization_and_generator_formatting() {
     value.size = 64;
     value.fields.emplace("health", Field{"health", "int32", 4});
     require(db.insert_class(value), "fixture class insert failed");
+    Class nested = value;
+    nested.name = "C_Test::Inner";
+    nested.fields.clear();
+    require(db.insert_class(nested), "nested fixture class insert failed");
     Enum first;
     first.scope = "client.dll";
     first.type_scope = "client.dll";
@@ -190,6 +247,9 @@ void json_serialization_and_generator_formatting() {
     require(db.insert_enum(second), "same-name enum in another type scope rejected");
     db.offsets.emplace("client.dll::dwTest",
                        Offset{"dwTest", "client.dll", "signature", "test", "success", "signature_address", 32, {}});
+    db.offsets.emplace("client.dll::SchemaSystem",
+                       Offset{"SchemaSystem", "client.dll", "signature", "test", "success", "schema_pointer", 48, {}});
+    db.game_build = 14182;
     const auto directory =
         fs::temp_directory_path() /
         ("cs2-dumper-test-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
@@ -198,6 +258,7 @@ void json_serialization_and_generator_formatting() {
     std::ifstream input(directory / "client_dll.json");
     const auto parsed = nlohmann::json::parse(input);
     require(parsed["classes"]["C_Test"]["fields"]["health"]["offset"] == 4, "numeric JSON field offset failed");
+    require(parsed["classes"].contains("C_Test__Inner"), "nested schema class key not normalized");
     require(parsed["classes"]["C_Test"]["fields"]["health"]["offset_hex"] == "0x4", "hex JSON field offset failed");
     require(parsed["enums"].size() == 2 && parsed["enums"].contains("Mode@client.dll") &&
                 parsed["enums"].contains("Mode@shared.dll"),
@@ -219,6 +280,11 @@ void json_serialization_and_generator_formatting() {
             "required files missing");
     require(nlohmann::json::parse(std::ifstream(directory / "info.json"))["statistics"]["schema_fields"] == 1,
             "info statistics failed");
+    require(nlohmann::json::parse(std::ifstream(directory / "info.json"))["game_build"] == 14182,
+            "numeric game build missing");
+    require(nlohmann::json::parse(
+                std::ifstream(directory / "offsets.json"))["client.dll"]["SchemaSystem"]["relative_offset"] == 48,
+            "schema pointer RVA missing from JSON");
 }
 void duplicate_class_json_keys() {
     DumpDatabase db;
@@ -232,14 +298,21 @@ void duplicate_class_json_keys() {
     second.type_scope = "shared.dll";
     second.size = 64;
     require(db.insert_class(first) && db.insert_class(second), "scope-qualified class insertion failed");
+    Class nested = first;
+    nested.name = "Shared::Inner";
+    Class colliding = first;
+    colliding.name = "Shared__Inner";
+    require(db.insert_class(nested) && db.insert_class(colliding), "normalized name collision fixture failed");
     const auto directory =
         fs::temp_directory_path() /
         ("cs2-class-json-test-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
     std::string error;
     require(generate(db, directory, {"json"}, error), "duplicate class fixture generation failed");
     const auto parsed = nlohmann::json::parse(std::ifstream(directory / "client_dll.json"));
-    require(parsed["classes"].size() == 2 && parsed["classes"].contains("Shared@client.dll") &&
-                parsed["classes"].contains("Shared@shared.dll"),
+    require(parsed["classes"].size() == 4 && parsed["classes"].contains("Shared@client.dll") &&
+                parsed["classes"].contains("Shared@shared.dll") &&
+                parsed["classes"].contains("Shared__Inner@client.dll") &&
+                parsed["classes"].contains("Shared__Inner@client.dll#2"),
             "same-name classes silently overwritten in JSON");
 }
 } // namespace
@@ -251,6 +324,7 @@ int main() {
         {"pe_section_parsing", pe_section_parsing},
         {"inheritance_and_duplicate_handling", inheritance_and_duplicate_handling},
         {"identifier_sanitization", identifier_sanitization},
+        {"signature_kinds_and_rvas", signature_kinds_and_rvas},
         {"json_serialization_and_generator_formatting", json_serialization_and_generator_formatting},
         {"duplicate_class_json_keys", duplicate_class_json_keys},
     };

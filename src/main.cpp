@@ -288,6 +288,18 @@ int main(int argc, char **argv) {
         collect_interfaces(images, process, db);
     const auto discovered =
         collect_signatures(images, process.attached() ? &process : nullptr, *signatures, db, options.collection);
+    if (process.attached()) {
+        const auto build = db.offsets.find(qualified("engine2.dll", "dwBuildNumber"));
+        const auto module = db.modules.find("engine2.dll");
+        if (build != db.offsets.end() && build->second.status == "success" && module != db.modules.end() &&
+            module->second.base && build->second.relative < module->second.image_size) {
+            const auto value = process.value<std::uint32_t>(module->second.base + build->second.relative);
+            if (value && *value > 0 && *value < 10000000)
+                db.game_build = *value;
+            else
+                db.issues.push_back({"WARN", "game_build", "build number unreadable or implausible"});
+        }
+    }
     if (options.collection.verbose)
         for (const auto &[key, result] : db.offsets)
             std::cout << "[TRACE] " << key << " " << result.status << '\n';

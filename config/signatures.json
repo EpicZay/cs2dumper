@@ -30,6 +30,11 @@
     "resolver": { "type": "rip", "displacement_offset": 3, "instruction_length": 7 }
   },
   {
+    "module": "client.dll", "name": "dwGameEntitySystem_highestEntityIndex", "kind": "member_offset",
+    "pattern": "FF 81 ?? ?? ?? ?? 48 85 D2", "section": ".text",
+    "resolver": { "type": "immediate", "offset": 2, "width": 4 }
+  },
+  {
     "module": "client.dll", "name": "dwGlobalVars", "kind": "signature_address",
     "pattern": "48 89 15 ?? ?? ?? ?? 48 89 42", "section": ".text",
     "resolver": { "type": "rip", "displacement_offset": 3, "instruction_length": 7 }
@@ -37,6 +42,36 @@
   {
     "module": "client.dll", "name": "dwLocalPlayerController", "kind": "signature_address",
     "pattern": "48 8B 05 ?? ?? ?? ?? 41 89 BE", "section": ".text",
+    "resolver": { "type": "rip", "displacement_offset": 3, "instruction_length": 7 }
+  },
+  {
+    "module": "client.dll", "name": "dwGlowManager", "kind": "signature_address",
+    "pattern": "48 8B 05 ?? ?? ?? ?? C3 CC CC CC CC CC CC CC CC 8B 41", "section": ".text",
+    "resolver": { "type": "rip", "displacement_offset": 3, "instruction_length": 7 }
+  },
+  {
+    "module": "client.dll", "name": "dwPlantedC4", "kind": "signature_address",
+    "pattern": "48 8B 1D ?? ?? ?? ?? 45 32 F6", "section": ".text",
+    "resolver": { "type": "rip", "displacement_offset": 3, "instruction_length": 7 }
+  },
+  {
+    "module": "client.dll", "name": "dwPrediction", "kind": "signature_address",
+    "pattern": "48 8D 05 ?? ?? ?? ?? C3 CC CC CC CC CC CC CC CC 40 53 56 41 54", "section": ".text",
+    "resolver": { "type": "rip", "displacement_offset": 3, "instruction_length": 7 }
+  },
+  {
+    "module": "client.dll", "name": "dwLocalPlayerPawn", "kind": "relative_to_offset", "base": "dwPrediction",
+    "pattern": "4C 39 B6 ?? ?? ?? ?? 74 ?? 44 88 BE", "section": ".text",
+    "resolver": { "type": "immediate", "offset": 3, "width": 4 }
+  },
+  {
+    "module": "client.dll", "name": "dwViewAngles", "kind": "relative_to_offset", "base": "dwCSGOInput",
+    "pattern": "F2 42 0F 10 84 28 ?? ?? ?? ??", "section": ".text",
+    "resolver": { "type": "immediate", "offset": 6, "width": 4 }
+  },
+  {
+    "module": "client.dll", "name": "dwWeaponC4", "kind": "signature_address",
+    "pattern": "48 8B 15 ?? ?? ?? ?? 48 8B 5C 24 ?? FF C0 89 05 ?? ?? ?? ?? 48 8B C6 48 89 34 EA 80 BE", "section": ".text",
     "resolver": { "type": "rip", "displacement_offset": 3, "instruction_length": 7 }
   },
   {
@@ -60,6 +95,46 @@
     "resolver": { "type": "rip", "displacement_offset": 3, "instruction_length": 7 }
   },
   {
+    "module": "engine2.dll", "name": "dwBuildNumber", "kind": "signature_address",
+    "pattern": "89 05 ?? ?? ?? ?? 48 8D 0D ?? ?? ?? ?? FF 15 ?? ?? ?? ?? 48 8B 0D", "section": ".text",
+    "resolver": { "type": "rip", "displacement_offset": 2, "instruction_length": 6 }
+  },
+  {
+    "module": "engine2.dll", "name": "dwNetworkGameClient_clientTickCount", "kind": "member_offset",
+    "pattern": "8B 81 ?? ?? ?? ?? C3 CC CC CC CC CC CC CC CC CC 8B 81 ?? ?? ?? ?? C3 CC CC CC CC CC CC CC CC CC 83 B9", "section": ".text",
+    "resolver": { "type": "immediate", "offset": 2, "width": 4 }
+  },
+  {
+    "module": "engine2.dll", "name": "dwNetworkGameClient_deltaTick", "kind": "member_offset",
+    "pattern": "4C 8D B7 ?? ?? ?? ?? 4C 89 7C 24", "section": ".text",
+    "resolver": { "type": "immediate", "offset": 3, "width": 4 }
+  },
+  {
+    "module": "engine2.dll", "name": "dwNetworkGameClient_isBackgroundMap", "kind": "member_offset",
+    "pattern": "0F B6 81 ?? ?? ?? ?? C3 CC CC CC CC CC CC CC CC 0F B6 81 ?? ?? ?? ?? C3 CC CC CC CC CC CC CC CC 48 83 EC", "section": ".text",
+    "resolver": { "type": "immediate", "offset": 3, "width": 4 }
+  },
+  {
+    "module": "engine2.dll", "name": "dwNetworkGameClient_localPlayer", "kind": "member_offset",
+    "pattern": "42 8B 94 D3 ?? ?? ?? ?? 5B 49 FF E3 32 C0 5B C3 CC CC CC CC CC CC CC CC 40 53", "section": ".text",
+    "resolver": { "type": "immediate", "offset": 4, "width": 4 }
+  },
+  {
+    "module": "engine2.dll", "name": "dwNetworkGameClient_maxClients", "kind": "member_offset",
+    "pattern": "8B 81 ?? ?? ?? ?? C3 ?? ?? ?? ?? ?? ?? ?? ?? ?? 8B 81 ?? ?? ?? ?? C3 ?? ?? ?? ?? ?? ?? ?? ?? ?? 8B 81", "section": ".text",
+    "resolver": { "type": "immediate", "offset": 2, "width": 4 }
+  },
+  {
+    "module": "engine2.dll", "name": "dwNetworkGameClient_serverTickCount", "kind": "member_offset",
+    "pattern": "8B 81 ?? ?? ?? ?? C3 CC CC CC CC CC CC CC CC CC 83 B9", "section": ".text",
+    "resolver": { "type": "immediate", "offset": 2, "width": 4 }
+  },
+  {
+    "module": "engine2.dll", "name": "dwNetworkGameClient_signOnState", "kind": "member_offset",
+    "pattern": "44 8B 81 ?? ?? ?? ?? 48 8D 0D", "section": ".text",
+    "resolver": { "type": "immediate", "offset": 3, "width": 4 }
+  },
+  {
     "module": "engine2.dll", "name": "dwWindowHeight", "kind": "signature_address",
     "pattern": "8B 05 ?? ?? ?? ?? 89 03", "section": ".text",
     "resolver": { "type": "rip", "displacement_offset": 2, "instruction_length": 6 }
@@ -68,5 +143,20 @@
     "module": "engine2.dll", "name": "dwWindowWidth", "kind": "signature_address",
     "pattern": "8B 05 ?? ?? ?? ?? 89 07", "section": ".text",
     "resolver": { "type": "rip", "displacement_offset": 2, "instruction_length": 6 }
+  },
+  {
+    "module": "inputsystem.dll", "name": "dwInputSystem", "kind": "signature_address",
+    "pattern": "48 89 05 ?? ?? ?? ?? 33 C0", "section": ".text",
+    "resolver": { "type": "rip", "displacement_offset": 3, "instruction_length": 7 }
+  },
+  {
+    "module": "matchmaking.dll", "name": "dwGameTypes", "kind": "signature_address",
+    "pattern": "48 8D 0D ?? ?? ?? ?? FF 90", "section": ".text",
+    "resolver": { "type": "rip", "displacement_offset": 3, "instruction_length": 7 }
+  },
+  {
+    "module": "soundsystem.dll", "name": "dwSoundSystem", "kind": "signature_address",
+    "pattern": "48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 8B 0D ?? ?? ?? ?? ?? ?? ?? 4C 8B 82", "section": ".text",
+    "resolver": { "type": "rip", "displacement_offset": 3, "instruction_length": 7 }
   }
 ]

@@ -273,11 +273,37 @@ CollectionResult collect_signatures(const ModuleImages &images, const MemoryRead
                 continue;
             }
             if (kind == "schema_pointer") {
-                output.schema_address = address;
-                record.status = "success";
+                if (in_module(image->second, address)) {
+                    output.schema_address = address;
+                    record.relative = address - image->second.loaded.base;
+                    record.status = "success";
+                } else {
+                    record.status = "invalid_module";
+                    record.detail = "schema target outside source module";
+                }
             } else if (kind == "button_list") {
                 output.button_list_address = address;
                 record.status = "success";
+            } else if (kind == "member_offset") {
+                if (type == "immediate" && address < (1u << 24)) {
+                    record.relative = address;
+                    record.status = "success";
+                } else {
+                    record.status = "invalid_instruction";
+                    record.detail = "invalid member displacement";
+                }
+            } else if (kind == "relative_to_offset") {
+                const auto base_name = entry.at("base").get<std::string>();
+                const auto base = db.offsets.find(qualified(module, base_name));
+                if (type == "immediate" && base != db.offsets.end() && base->second.status == "success" &&
+                    base->second.kind == "signature_address" && address < image->second.pe.image_size() &&
+                    base->second.relative < image->second.pe.image_size() - address) {
+                    record.relative = base->second.relative + address;
+                    record.status = "success";
+                } else {
+                    record.status = "invalid_instruction";
+                    record.detail = "base offset unavailable or derived target outside module";
+                }
             } else if (in_module(image->second, address)) {
                 record.relative = address - image->second.loaded.base;
                 record.status = "success";
@@ -382,8 +408,6 @@ void collect_schema(const MemoryReader &mem, std::uint64_t address, const nlohma
             return;
         }
         std::size_t valid_scopes{};
-        std::unordered_set<std::uint64_t> parsed_classes;
-        std::unordered_set<std::uint64_t> parsed_enums;
         for (std::int32_t i = 0; i < *scope_count; ++i) {
             const auto scope = mem.value<std::uint64_t>(*scope_array + static_cast<std::uint64_t>(i) * 8);
             if (!scope || !*scope)
@@ -394,10 +418,7 @@ void collect_schema(const MemoryReader &mem, std::uint64_t address, const nlohma
             ++valid_scopes;
             const auto class_hash = *scope + offset(layout, "type_scope", "class_hash");
             for (const auto binding : hash_bindings(mem, class_hash, layout, db, *scope_name)) {
-                if (!parsed_classes.insert(binding).second)
-                    continue;
                 auto name = ptr_string(mem, binding, offset(layout, "class", "name"));
-                auto module = ptr_string(mem, binding, offset(layout, "class", "module"));
                 const auto size = at<std::int32_t>(mem, binding, offset(layout, "class", "size"));
                 const auto field_count = at<std::int16_t>(mem, binding, offset(layout, "class", "field_count"));
                 const auto metadata_count = at<std::int16_t>(mem, binding, offset(layout, "class", "metadata_count"));
@@ -405,9 +426,7 @@ void collect_schema(const MemoryReader &mem, std::uint64_t address, const nlohma
                     *field_count < 0 || *field_count > 8192 || !metadata_count || *metadata_count < 0 ||
                     *metadata_count > 128)
                     continue;
-                std::string module_name = module.value_or(*scope_name);
-                if (module_name.find('.') == std::string::npos)
-                    module_name += ".dll";
+                const std::string &module_name = *scope_name;
                 Class klass{*name,
                             module_name,
                             static_cast<std::uint32_t>(*size),
@@ -480,15 +499,11 @@ void collect_schema(const MemoryReader &mem, std::uint64_t address, const nlohma
             }
             const auto enum_hash = *scope + offset(layout, "type_scope", "enum_hash");
             for (const auto binding : hash_bindings(mem, enum_hash, layout, db, *scope_name)) {
-                if (!parsed_enums.insert(binding).second)
-                    continue;
                 const auto name = ptr_string(mem, binding, offset(layout, "enum", "name"));
                 const auto count = at<std::uint16_t>(mem, binding, offset(layout, "enum", "count"));
                 if (!name || name->empty() || !count || *count > 8192)
                     continue;
-                std::string enum_module = ptr_string(mem, binding, 16).value_or(*scope_name);
-                if (enum_module.find('.') == std::string::npos)
-                    enum_module += ".dll";
+                const std::string &enum_module = *scope_name;
                 Enum value{*name,
                            enum_module,
                            at<std::uint8_t>(mem, binding, offset(layout, "enum", "size")).value_or(0),
