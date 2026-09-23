@@ -1,0 +1,72 @@
+[
+  {
+    "module": "schemasystem.dll",
+    "name": "SchemaSystem",
+    "kind": "schema_pointer",
+    "pattern": "4C 8D 35 ?? ?? ?? ?? 0F 28 45",
+    "section": ".text",
+    "resolver": { "type": "rip", "displacement_offset": 3, "instruction_length": 7 },
+    "provenance": "Unique match verified against the locally installed schemasystem.dll; upstream a2x/cs2-dumper uses this instruction sequence."
+  },
+  {
+    "module": "client.dll", "name": "button_list", "kind": "button_list",
+    "pattern": "48 8B 15 ?? ?? ?? ?? 48 85 D2 74 ?? 48 8B 02 48 85 C0", "section": ".text",
+    "resolver": { "type": "rip", "displacement_offset": 3, "instruction_length": 7 }, "dereference": 1,
+    "provenance": "Unique match verified in locally installed client.dll; pattern structure from upstream a2x/cs2-dumper."
+  },
+  {
+    "module": "client.dll", "name": "dwCSGOInput", "kind": "signature_address",
+    "pattern": "48 89 05 ?? ?? ?? ?? 0F 57 C0 0F 11 05", "section": ".text",
+    "resolver": { "type": "rip", "displacement_offset": 3, "instruction_length": 7 }
+  },
+  {
+    "module": "client.dll", "name": "dwEntityList", "kind": "signature_address",
+    "pattern": "48 89 0D ?? ?? ?? ?? E9 ?? ?? ?? ?? CC", "section": ".text",
+    "resolver": { "type": "rip", "displacement_offset": 3, "instruction_length": 7 }
+  },
+  {
+    "module": "client.dll", "name": "dwGameEntitySystem", "kind": "signature_address",
+    "pattern": "48 8B 1D ?? ?? ?? ?? 48 89 1D ?? ?? ?? ?? 4C 63 B3", "section": ".text",
+    "resolver": { "type": "rip", "displacement_offset": 3, "instruction_length": 7 }
+  },
+  {
+    "module": "client.dll", "name": "dwGlobalVars", "kind": "signature_address",
+    "pattern": "48 89 15 ?? ?? ?? ?? 48 89 42", "section": ".text",
+    "resolver": { "type": "rip", "displacement_offset": 3, "instruction_length": 7 }
+  },
+  {
+    "module": "client.dll", "name": "dwLocalPlayerController", "kind": "signature_address",
+    "pattern": "48 8B 05 ?? ?? ?? ?? 41 89 BE", "section": ".text",
+    "resolver": { "type": "rip", "displacement_offset": 3, "instruction_length": 7 }
+  },
+  {
+    "module": "client.dll", "name": "dwViewMatrix", "kind": "signature_address",
+    "pattern": "48 8D 0D ?? ?? ?? ?? 48 C1 E0 06", "section": ".text",
+    "resolver": { "type": "rip", "displacement_offset": 3, "instruction_length": 7 }
+  },
+  {
+    "module": "client.dll", "name": "dwViewRender", "kind": "signature_address",
+    "pattern": "48 89 05 ?? ?? ?? ?? 48 8B C8 48 85 C0", "section": ".text",
+    "resolver": { "type": "rip", "displacement_offset": 3, "instruction_length": 7 }
+  },
+  {
+    "module": "client.dll", "name": "dwGameRules", "kind": "signature_address",
+    "pattern": "F6 C1 01 0F 85 ?? ?? ?? ?? 4C 8B 05 ?? ?? ?? ?? 4D 85", "section": ".text",
+    "resolver": { "type": "rip", "displacement_offset": 12, "instruction_length": 16 }
+  },
+  {
+    "module": "engine2.dll", "name": "dwNetworkGameClient", "kind": "signature_address",
+    "pattern": "48 89 3D ?? ?? ?? ?? FF 87", "section": ".text",
+    "resolver": { "type": "rip", "displacement_offset": 3, "instruction_length": 7 }
+  },
+  {
+    "module": "engine2.dll", "name": "dwWindowHeight", "kind": "signature_address",
+    "pattern": "8B 05 ?? ?? ?? ?? 89 03", "section": ".text",
+    "resolver": { "type": "rip", "displacement_offset": 2, "instruction_length": 6 }
+  },
+  {
+    "module": "engine2.dll", "name": "dwWindowWidth", "kind": "signature_address",
+    "pattern": "8B 05 ?? ?? ?? ?? 89 07", "section": ".text",
+    "resolver": { "type": "rip", "displacement_offset": 2, "instruction_length": 6 }
+  }
+]

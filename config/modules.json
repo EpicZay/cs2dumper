@@ -1,0 +1,6 @@
+[
+  "animationsystem.dll", "client.dll", "engine2.dll", "host.dll", "materialsystem2.dll",
+  "networksystem.dll", "panorama.dll", "particles.dll", "pulse_system.dll",
+  "rendersystemdx11.dll", "resourcesystem.dll", "scenesystem.dll", "schemasystem.dll",
+  "server.dll", "soundsystem.dll", "steamaudio.dll", "vphysics2.dll", "worldrenderer.dll"
+]

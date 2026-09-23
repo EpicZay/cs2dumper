@@ -1,0 +1,16 @@
+{
+  "source": "https://github.com/a2x/cs2-dumper/tree/master/src/source2",
+  "note": "Observed Source 2 structure profile. Live values are validated before export; update this file when game layouts change.",
+  "schema_system": { "scope_vector": 400, "registration_count": 640 },
+  "type_scope": { "name": 8, "class_hash": 1376, "enum_hash": 7632 },
+  "hash": { "bucket_start": 96, "bucket_count": 256, "bucket_stride": 24, "first": 8, "uncommitted": 16, "node_next": 8, "node_data": 16,
+            "free_head": 32, "peak_allocated": 16, "free_next": 0, "free_data": 16 },
+  "class": { "name": 8, "module": 16, "binary_name": 24, "size": 32, "field_count": 36, "metadata_count": 38, "alignment": 42, "fields": 48, "bases": 64, "metadata": 72 },
+  "field": { "stride": 32, "name": 0, "type": 8, "offset": 16, "metadata_count": 20, "metadata": 24 },
+  "type": { "name": 8, "category": 24, "array_size": 32 },
+  "base": { "class_ptr": 24, "name": 16 },
+  "enum": { "name": 8, "size": 24, "alignment": 25, "count": 28, "values": 32 },
+  "enum_value": { "stride": 32, "name": 0, "value": 8 },
+  "metadata": { "stride": 16, "name": 0, "value": 8 },
+  "button": { "name": 8, "state": 48, "next": 136 }
+}
